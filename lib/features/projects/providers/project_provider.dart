@@ -11,6 +11,11 @@ class ProjectProvider extends ChangeNotifier {
   int _currentPage = 0;
   int _totalPages = 1;
 
+  // Para manejar el detalle del proyecto actual
+  ProjectDetailResponse? _currentProjectDetail;
+  bool _isLoadingProjectDetail = false;
+  String? _currentProjectId;
+
   List<ProjectModel> get projects => _projects;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -18,8 +23,20 @@ class ProjectProvider extends ChangeNotifier {
   int get totalPages => _totalPages;
   bool get hasNextPage => _currentPage < _totalPages - 1;
 
+  // Getters para el detalle del proyecto
+  ProjectDetailResponse? get currentProjectDetail => _currentProjectDetail;
+  bool get isLoadingProjectDetail => _isLoadingProjectDetail;
+  String? get currentProjectId => _currentProjectId;
+  List<ProjectScript> get currentProjectScripts =>
+      _currentProjectDetail?.project.scripts ?? [];
+
   void _setLoading(bool loading) {
     _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setLoadingProjectDetail(bool loading) {
+    _isLoadingProjectDetail = loading;
     notifyListeners();
   }
 
@@ -44,6 +61,29 @@ class ProjectProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  /// Obtiene el detalle de un proyecto específico con sus scripts
+  Future<void> fetchProjectDetail(String projectId) async {
+    _setLoadingProjectDetail(true);
+    _clearError();
+    _currentProjectId = projectId;
+
+    try {
+      _currentProjectDetail = await _projectService.getProjectById(projectId);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _setLoadingProjectDetail(false);
+    }
+  }
+
+  /// Limpia los datos del proyecto actual
+  void clearCurrentProject() {
+    _currentProjectDetail = null;
+    _currentProjectId = null;
+    _clearError();
+    notifyListeners();
   }
 
   Future<void> loadNextPage() async {

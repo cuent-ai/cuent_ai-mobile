@@ -7,9 +7,12 @@ class AppConstants {
 
   // API Constants
   static const String baseUrl =
-      'https://cuent-ai-core-sw1-656847318304.us-central1.run.app/api/v1';
+      'https://cuent-ai-core-326160083778.us-central1.run.app/api/v1';
   static const String loginEndpoint = '/users/sign-in';
   static const String registerEndpoint = '/users/sign-up';
+  static const String projectsEndpoint = '/projects';
+  static const String scriptsEndpoint = '/scripts';
+  static const String assetsEndpoint = '/assets';
 
   // Storage Keys
   static const String tokenKey = 'auth_token';

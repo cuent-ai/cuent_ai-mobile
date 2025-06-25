@@ -41,4 +41,38 @@ class ProjectService {
       throw Exception('Error fetching projects: $e');
     }
   }
+
+  /// Obtiene un proyecto específico por ID con sus scripts incluidos
+  Future<ProjectDetailResponse> getProjectById(String projectId) async {
+    try {
+      final token = await TokenManager.getToken();
+
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final uri = Uri.parse(
+        '${AppConstants.baseUrl}$projectsEndpoint/$projectId',
+      );
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return ProjectDetailResponse.fromJson(jsonData);
+      } else {
+        throw Exception(
+          'Failed to load project details: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error fetching project details: $e');
+    }
+  }
 }

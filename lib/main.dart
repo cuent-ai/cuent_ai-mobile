@@ -4,6 +4,8 @@ import 'core/theme/app_theme.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/projects/providers/project_provider.dart';
 import 'features/assets/providers/asset_provider.dart';
+import 'features/scripts/providers/script_provider.dart';
+import 'features/scripts/providers/script_detail_provider.dart';
 import 'features/auth/screens/splash_screen.dart';
 
 void main() {
@@ -20,6 +22,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ProjectProvider()),
         ChangeNotifierProvider(create: (_) => AssetProvider()),
+        ChangeNotifierProvider(create: (_) => ScriptProvider()),
+        ChangeNotifierProvider(create: (_) => ScriptDetailProvider()),
       ],
       child: MaterialApp(
         title: 'Cuent AI',

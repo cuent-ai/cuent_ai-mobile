@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 // Debug utility to test your backend API directly
 class ApiTestUtil {
   static const String baseUrl =
-      'https://cuent-ai-core-sw1-656847318304.us-central1.run.app/api/v1';
+      'https://cuent-ai-core-326160083778.us-central1.run.app/api/v1';
 
   // Test login with admin credentials
   static Future<void> testLogin() async {

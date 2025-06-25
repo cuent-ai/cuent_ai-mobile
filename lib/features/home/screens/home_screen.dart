@@ -5,7 +5,7 @@ import '../../auth/screens/login_screen.dart';
 import '../../projects/providers/project_provider.dart';
 import '../../projects/widgets/project_card.dart';
 import '../../projects/widgets/project_stats_widget.dart';
-import '../../assets/screens/project_assets_screen.dart';
+import '../../scripts/screens/project_detail_screen.dart';
 import '../../../core/theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -199,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     context,
                     MaterialPageRoute(
                       builder:
-                          (context) => ProjectAssetsScreen(project: project),
+                          (context) => ProjectDetailScreen(project: project),
                     ),
                   );
                 },
