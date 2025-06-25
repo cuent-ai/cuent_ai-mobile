@@ -2,10 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
+import '../../projects/providers/project_provider.dart';
+import '../../projects/widgets/project_card.dart';
+import '../../projects/widgets/project_stats_widget.dart';
 import '../../../core/theme/app_theme.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch projects when the screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final projectProvider = Provider.of<ProjectProvider>(
+        context,
+        listen: false,
+      );
+      projectProvider.fetchProjects();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,26 +35,42 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Inicio'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              final projectProvider = Provider.of<ProjectProvider>(
+                context,
+                listen: false,
+              );
+              projectProvider.fetchProjects();
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => _showLogoutDialog(context),
           ),
         ],
       ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
+      body: Consumer2<AuthProvider, ProjectProvider>(
+        builder: (context, authProvider, projectProvider, child) {
           final user = authProvider.user;
-          
-          return Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildWelcomeCard(user?.name ?? 'Usuario'),
-                const SizedBox(height: 30),
-                _buildStatsGrid(),
-                const SizedBox(height: 30),
-                _buildQuickActions(),
-              ],
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              await projectProvider.fetchProjects();
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildWelcomeCard(user?.name ?? 'Usuario'),
+                  const SizedBox(height: 30),
+                  _buildProjectsSection(projectProvider),
+                  const SizedBox(height: 30),
+                  _buildQuickActions(),
+                ],
+              ),
             ),
           );
         },
@@ -65,10 +102,7 @@ class HomeScreen extends StatelessWidget {
         children: [
           const Text(
             '¡Hola!',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white70,
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.white70),
           ),
           const SizedBox(height: 8),
           Text(
@@ -82,95 +116,145 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             'Bienvenido de vuelta a tu aplicación',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white70,
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.white70),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatsGrid() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
+  Widget _buildProjectsSection(ProjectProvider projectProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStatCard(
-          icon: Icons.trending_up,
-          title: 'Progreso',
-          value: '85%',
-          color: AppTheme.successColor,
-        ),
-        _buildStatCard(
-          icon: Icons.star,
-          title: 'Puntuación',
-          value: '4.8',
-          color: AppTheme.warningColor,
-        ),
-        _buildStatCard(
-          icon: Icons.schedule,
-          title: 'Tiempo',
-          value: '2.5h',
-          color: AppTheme.accentColor,
-        ),
-        _buildStatCard(
-          icon: Icons.emoji_events,
-          title: 'Logros',
-          value: '12',
-          color: AppTheme.primaryColor,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[800]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Mis Proyectos',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+            Text(
+              '${projectProvider.projects.length} proyecto${projectProvider.projects.length != 1 ? 's' : ''}',
+              style: TextStyle(fontSize: 14, color: Colors.grey[400]),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[400],
-            ),
-          ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Show stats if we have projects
+        if (projectProvider.projects.isNotEmpty) ...[
+          ProjectStatsWidget(projects: projectProvider.projects),
+          const SizedBox(height: 20),
         ],
-      ),
+        if (projectProvider.isLoading)
+          const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+            ),
+          )
+        else if (projectProvider.errorMessage != null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.errorColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.errorColor.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.error_outline, color: AppTheme.errorColor, size: 48),
+                const SizedBox(height: 8),
+                Text(
+                  'Error al cargar proyectos',
+                  style: TextStyle(
+                    color: AppTheme.errorColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  projectProvider.errorMessage!,
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () => projectProvider.fetchProjects(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Reintentar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.errorColor,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (projectProvider.projects.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[800]!),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.folder_open, size: 64, color: Colors.grey[600]),
+                const SizedBox(height: 16),
+                Text(
+                  'No tienes proyectos aún',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[400],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Crea tu primer proyecto para comenzar',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // TODO: Navigate to create project screen
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Crear Proyecto'),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: projectProvider.projects.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              final project = projectProvider.projects[index];
+              return ProjectCard(
+                project: project,
+                onTap: () {
+                  // TODO: Navigate to project details
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Proyecto seleccionado: ${project.name}'),
+                      backgroundColor: AppTheme.primaryColor,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+      ],
     );
   }
 
@@ -271,11 +355,16 @@ class HomeScreen extends StatelessWidget {
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop();
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                final authProvider = Provider.of<AuthProvider>(
+                  context,
+                  listen: false,
+                );
                 await authProvider.logout();
                 if (context.mounted) {
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
                   );
                 }
               },

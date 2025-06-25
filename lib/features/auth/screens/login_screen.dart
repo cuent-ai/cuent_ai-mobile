@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_form.dart';
-import '../widgets/social_login_buttons.dart';
 import 'register_screen.dart';
-import '../../home/screens/home_screen.dart';
+import '../../home/screens/dashboard_screen.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -15,11 +14,12 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
@@ -35,18 +35,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.5),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
     _animationController.forward();
   }
@@ -69,12 +64,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
       if (success && mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Error al iniciar sesión'),
+            content: Text(
+              authProvider.errorMessage ?? 'Error al iniciar sesión',
+            ),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -102,9 +99,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       _buildHeader(),
                       const SizedBox(height: 40),
                       _buildLoginForm(),
-                      const SizedBox(height: 30),
-                      const SocialLoginButtons(),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 40),
                       _buildRegisterLink(),
                     ],
                   ),
@@ -129,11 +124,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             ),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: const Icon(
-            Icons.lock_outline,
-            size: 32,
-            color: Colors.white,
-          ),
+          child: const Icon(Icons.lock_outline, size: 32, color: Colors.white),
         ),
         const SizedBox(height: 24),
         const Text(
@@ -147,10 +138,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         const SizedBox(height: 8),
         Text(
           AppConstants.loginSubtitle,
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[400],
-          ),
+          style: TextStyle(fontSize: 16, color: Colors.grey[400]),
         ),
       ],
     );
@@ -183,10 +171,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         child: RichText(
           text: TextSpan(
             text: '¿No tienes cuenta? ',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 16,
-            ),
+            style: TextStyle(color: Colors.grey[400], fontSize: 16),
             children: const [
               TextSpan(
                 text: 'Regístrate',

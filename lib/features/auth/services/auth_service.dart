@@ -1,62 +1,120 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/token_manager.dart';
+import '../../../core/utils/api_client.dart';
 
 class AuthService {
   Future<Map<String, dynamic>> login(String email, String password) async {
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
-    
-    // Mock successful login
-    if (email == 'test@example.com' && password == '123456') {
-      return {
-        'success': true,
-        'token': 'mock_token_123',
-        'user': {
-          'id': '1',
-          'name': 'Usuario Test',
-          'email': email,
-          'created_at': DateTime.now().toIso8601String(),
-        }
-      };
-    } else {
-      return {
-        'success': false,
-        'message': 'Credenciales incorrectas'
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> register(String name, String email, String password) async {
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
-    
-    // Mock successful registration
-    return {
-      'success': true,
-      'token': 'mock_token_456',
-      'user': {
-        'id': '2',
-        'name': name,
-        'email': email,
-        'created_at': DateTime.now().toIso8601String(),
-      }
-    };
-  }
-
-  Future<Map<String, dynamic>> _makeRequest(String endpoint, Map<String, dynamic> data) async {
     try {
-      final response = await http.post(
-        Uri.parse('${AppConstants.baseUrl}$endpoint'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(data),
-      );
+      final response = await ApiClient.post(AppConstants.loginEndpoint, {
+        'email': email.trim(),
+        'password': password,
+      });
 
-      return jsonDecode(response.body);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Successful login
+        final token = data['access_token'] ?? data['token'];
+        if (token != null) {
+          await TokenManager.saveToken(token);
+        }
+
+        return {
+          'success': true,
+          'token': token,
+          'user': {
+            'id':
+                data['user']?['id']?.toString() ?? data['id']?.toString() ?? '',
+            'name': data['user']?['name'] ?? data['name'] ?? '',
+            'email': data['user']?['email'] ?? data['email'] ?? email,
+            'created_at':
+                data['user']?['created_at'] ??
+                data['created_at'] ??
+                DateTime.now().toIso8601String(),
+          },
+        };
+      } else {
+        // Error response
+        String errorMessage = 'Credenciales incorrectas';
+
+        if (data is Map<String, dynamic>) {
+          errorMessage = data['message'] ?? data['error'] ?? errorMessage;
+        }
+
+        return {'success': false, 'message': errorMessage};
+      }
     } catch (e) {
-      throw Exception('Network error: $e');
+      print('Login error: $e'); // Debug log
+      return {'success': false, 'message': _getErrorMessage(e)};
     }
+  }
+
+  Future<Map<String, dynamic>> register(
+    String name,
+    String email,
+    String password,
+  ) async {
+    try {
+      final response = await ApiClient.post(AppConstants.registerEndpoint, {
+        'name': name.trim(),
+        'email': email.trim(),
+        'password': password,
+      });
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Successful registration
+        final token = data['access_token'] ?? data['token'];
+        if (token != null) {
+          await TokenManager.saveToken(token);
+        }
+
+        return {
+          'success': true,
+          'token': token,
+          'user': {
+            'id':
+                data['user']?['id']?.toString() ?? data['id']?.toString() ?? '',
+            'name': data['user']?['name'] ?? data['name'] ?? name,
+            'email': data['user']?['email'] ?? data['email'] ?? email,
+            'created_at':
+                data['user']?['created_at'] ??
+                data['created_at'] ??
+                DateTime.now().toIso8601String(),
+          },
+        };
+      } else {
+        // Error response
+        String errorMessage = 'Error al crear la cuenta';
+
+        if (data is Map<String, dynamic>) {
+          errorMessage = data['message'] ?? data['error'] ?? errorMessage;
+        }
+
+        return {'success': false, 'message': errorMessage};
+      }
+    } catch (e) {
+      print('Register error: $e'); // Debug log
+      return {'success': false, 'message': _getErrorMessage(e)};
+    }
+  }
+
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('TimeoutException')) {
+      return 'Tiempo de espera agotado. Verifica tu conexión.';
+    } else if (error.toString().contains('SocketException')) {
+      return 'Sin conexión a internet. Verifica tu red.';
+    }
+    return 'Error de conexión. Intenta nuevamente.';
+  }
+
+  Future<Map<String, String>> getAuthHeaders() async {
+    final token = await TokenManager.getToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
   }
 }
