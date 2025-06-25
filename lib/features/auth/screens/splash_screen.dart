@@ -12,7 +12,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -25,21 +26,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
 
     _animationController.forward();
     _navigateToNextScreen();
@@ -51,9 +44,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => authProvider.isAuthenticated 
-              ? const HomeScreen() 
-              : const LoginScreen(),
+          builder:
+              (context) =>
+                  authProvider.isAuthenticated
+                      ? const HomeScreen()
+                      : const LoginScreen(),
         ),
       );
     }
@@ -113,7 +108,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       ),
                       const SizedBox(height: 30),
                       const Text(
-                        'Flutter Auth',
+                        'CuentAI',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,

@@ -7,7 +7,7 @@ import '../../../core/utils/token_manager.dart';
 class ProjectService {
   static const String projectsEndpoint = '/projects';
 
-  Future<ProjectsResponse> getProjects() async {
+  Future<ProjectsResponse> getProjects({int offset = 0, int limit = 10}) async {
     try {
       // Get the token from storage
       final token = await TokenManager.getToken();
@@ -16,8 +16,15 @@ class ProjectService {
         throw Exception('No authentication token found');
       }
 
+      final uri = Uri.parse('${AppConstants.baseUrl}$projectsEndpoint').replace(
+        queryParameters: {
+          'offset': offset.toString(),
+          'limit': limit.toString(),
+        },
+      );
+
       final response = await http.get(
-        Uri.parse('${AppConstants.baseUrl}$projectsEndpoint'),
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

@@ -1,31 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../auth/providers/auth_provider.dart';
-import '../../auth/screens/login_screen.dart';
-import '../../projects/providers/project_provider.dart';
-import '../../projects/widgets/project_card.dart';
-import '../../projects/widgets/project_stats_widget.dart';
-import '../../assets/screens/project_assets_screen.dart';
+import '../../projects/models/project_model.dart';
+import '../providers/asset_provider.dart';
+import '../widgets/asset_card.dart';
+import 'asset_player_screen.dart';
 import '../../../core/theme/app_theme.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class ProjectAssetsScreen extends StatefulWidget {
+  final ProjectModel project;
+
+  const ProjectAssetsScreen({super.key, required this.project});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<ProjectAssetsScreen> createState() => _ProjectAssetsScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _ProjectAssetsScreenState extends State<ProjectAssetsScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch projects when the screen loads
+    // Fetch assets when the screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final projectProvider = Provider.of<ProjectProvider>(
-        context,
-        listen: false,
-      );
-      projectProvider.fetchProjects();
+      final assetProvider = Provider.of<AssetProvider>(context, listen: false);
+      assetProvider.fetchAssets(projectId: widget.project.id);
     });
   }
 
@@ -33,39 +30,69 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('CuentAI'),
+        title: Text(widget.project.name),
+        backgroundColor: AppTheme.backgroundColor,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              final projectProvider = Provider.of<ProjectProvider>(
+              final assetProvider = Provider.of<AssetProvider>(
                 context,
                 listen: false,
               );
-              projectProvider.fetchProjects();
+              assetProvider.fetchAssets(projectId: widget.project.id);
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _showLogoutDialog(context),
           ),
         ],
       ),
-      body: Consumer2<AuthProvider, ProjectProvider>(
-        builder: (context, authProvider, projectProvider, child) {
+      body: Consumer<AssetProvider>(
+        builder: (context, assetProvider, child) {
           return RefreshIndicator(
             onRefresh: () async {
-              await projectProvider.fetchProjects();
+              await assetProvider.fetchAssets(projectId: widget.project.id);
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 30),
-                  _buildProjectsSection(projectProvider),
-                  const SizedBox(height: 30),
+                  // Project info
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[800]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.project.name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.project.description,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Assets section
+                  _buildAssetsSection(assetProvider),
                 ],
               ),
             ),
@@ -75,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProjectsSection(ProjectProvider projectProvider) {
+  Widget _buildAssetsSection(AssetProvider assetProvider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -83,46 +110,44 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Mis Proyectos',
+              'Assets del Proyecto',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
             Text(
-              '${projectProvider.projects.length} proyecto${projectProvider.projects.length != 1 ? 's' : ''}',
+              '${assetProvider.assets.length} asset${assetProvider.assets.length != 1 ? 's' : ''}',
               style: TextStyle(fontSize: 14, color: Colors.grey[400]),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        // Show stats if we have projects
-        if (projectProvider.projects.isNotEmpty) ...[
-          ProjectStatsWidget(projects: projectProvider.projects),
-          const SizedBox(height: 20),
-        ],
-        if (projectProvider.isLoading)
+
+        if (assetProvider.isLoading)
           const Center(
             child: CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
             ),
           )
-        else if (projectProvider.errorMessage != null)
+        else if (assetProvider.errorMessage != null)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.errorColor.withOpacity(0.1),
+              color: AppTheme.errorColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.errorColor.withOpacity(0.3)),
+              border: Border.all(
+                color: AppTheme.errorColor.withValues(alpha: 0.3),
+              ),
             ),
             child: Column(
               children: [
                 Icon(Icons.error_outline, color: AppTheme.errorColor, size: 48),
                 const SizedBox(height: 8),
                 Text(
-                  'Error al cargar proyectos',
+                  'Error al cargar assets',
                   style: TextStyle(
                     color: AppTheme.errorColor,
                     fontWeight: FontWeight.bold,
@@ -130,13 +155,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  projectProvider.errorMessage!,
+                  assetProvider.errorMessage!,
                   style: TextStyle(color: Colors.grey[400], fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
-                  onPressed: () => projectProvider.fetchProjects(),
+                  onPressed:
+                      () => assetProvider.fetchAssets(
+                        projectId: widget.project.id,
+                      ),
                   icon: const Icon(Icons.refresh),
                   label: const Text('Reintentar'),
                   style: ElevatedButton.styleFrom(
@@ -146,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           )
-        else if (projectProvider.projects.isEmpty)
+        else if (assetProvider.assets.isEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(32),
@@ -157,10 +185,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Column(
               children: [
-                Icon(Icons.folder_open, size: 64, color: Colors.grey[600]),
+                Icon(Icons.library_music, size: 64, color: Colors.grey[600]),
                 const SizedBox(height: 16),
                 Text(
-                  'No tienes proyectos aún',
+                  'No hay assets en este proyecto',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -169,53 +197,49 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Crea tu primer proyecto para comenzar',
+                  'Los assets aparecerán aquí cuando estén disponibles',
                   style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Navigate to create project screen
-                  },
-                  icon: const Icon(Icons.add),
-                  label: const Text('Crear Proyecto'),
                 ),
               ],
             ),
           )
-        else
-          ListView.separated(
+        else ...[
+          ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: projectProvider.projects.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            itemCount: assetProvider.assets.length,
             itemBuilder: (context, index) {
-              final project = projectProvider.projects[index];
-              return ProjectCard(
-                project: project,
+              final asset = assetProvider.assets[index];
+              return AssetCard(
+                asset: asset,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder:
-                          (context) => ProjectAssetsScreen(project: project),
+                          (context) => AssetPlayerScreen(
+                            asset: asset,
+                            project: widget.project,
+                          ),
                     ),
                   );
                 },
               );
             },
           ),
-        // Add pagination controls at the bottom
-        if (projectProvider.projects.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          _buildPaginationControls(projectProvider),
+
+          // Pagination controls
+          if (assetProvider.assets.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            _buildPaginationControls(assetProvider),
+          ],
         ],
       ],
     );
   }
 
-  Widget _buildPaginationControls(ProjectProvider projectProvider) {
+  Widget _buildPaginationControls(AssetProvider assetProvider) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       child: LayoutBuilder(
@@ -223,10 +247,8 @@ class _HomeScreenState extends State<HomeScreen> {
           final isSmallScreen = constraints.maxWidth < 400;
 
           if (isSmallScreen) {
-            // Vertical layout for small screens
             return Column(
               children: [
-                // Page indicator
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -238,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     border: Border.all(color: Colors.grey[800]!),
                   ),
                   child: Text(
-                    'Página ${projectProvider.currentPage + 1} de ${projectProvider.totalPages}',
+                    'Página ${assetProvider.currentPage + 1} de ${assetProvider.totalPages}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
@@ -247,18 +269,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Buttons row
                 Row(
                   children: [
-                    // Previous page button
                     Expanded(
                       child: SizedBox(
                         height: 44,
                         child: ElevatedButton(
                           onPressed:
-                              projectProvider.currentPage > 0 &&
-                                      !projectProvider.isLoading
-                                  ? () => projectProvider.loadPreviousPage()
+                              assetProvider.currentPage > 0 &&
+                                      !assetProvider.isLoading
+                                  ? () => assetProvider.loadPreviousPage()
                                   : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.cardColor,
@@ -281,15 +301,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Next page button
                     Expanded(
                       child: SizedBox(
                         height: 44,
                         child: ElevatedButton(
                           onPressed:
-                              projectProvider.hasNextPage &&
-                                      !projectProvider.isLoading
-                                  ? () => projectProvider.loadNextPage()
+                              assetProvider.hasNextPage &&
+                                      !assetProvider.isLoading
+                                  ? () => assetProvider.loadNextPage()
                                   : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor,
@@ -316,20 +335,18 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             );
           } else {
-            // Horizontal layout for larger screens
             return Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Previous page button
                 Flexible(
                   flex: 2,
                   child: SizedBox(
                     height: 44,
                     child: ElevatedButton.icon(
                       onPressed:
-                          projectProvider.currentPage > 0 &&
-                                  !projectProvider.isLoading
-                              ? () => projectProvider.loadPreviousPage()
+                          assetProvider.currentPage > 0 &&
+                                  !assetProvider.isLoading
+                              ? () => assetProvider.loadPreviousPage()
                               : null,
                       icon: const Icon(Icons.arrow_back, size: 18),
                       label: const Text(
@@ -348,10 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(width: 12),
-
-                // Page indicator
                 Flexible(
                   flex: 3,
                   child: Container(
@@ -365,7 +379,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       border: Border.all(color: Colors.grey[800]!),
                     ),
                     child: Text(
-                      'Página ${projectProvider.currentPage + 1} de ${projectProvider.totalPages}',
+                      'Página ${assetProvider.currentPage + 1} de ${assetProvider.totalPages}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w500,
@@ -375,19 +389,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(width: 12),
-
-                // Next page button
                 Flexible(
                   flex: 2,
                   child: SizedBox(
                     height: 44,
                     child: ElevatedButton.icon(
                       onPressed:
-                          projectProvider.hasNextPage &&
-                                  !projectProvider.isLoading
-                              ? () => projectProvider.loadNextPage()
+                          assetProvider.hasNextPage && !assetProvider.isLoading
+                              ? () => assetProvider.loadNextPage()
                               : null,
                       icon: const Icon(Icons.arrow_forward, size: 18),
                       label: const Text(
@@ -411,55 +421,6 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         },
       ),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppTheme.cardColor,
-          title: const Text(
-            'Cerrar sesión',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: const Text(
-            '¿Estás seguro de que quieres cerrar sesión?',
-            style: TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'Cancelar',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                final authProvider = Provider.of<AuthProvider>(
-                  context,
-                  listen: false,
-                );
-                await authProvider.logout();
-                if (context.mounted) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
-                    ),
-                  );
-                }
-              },
-              child: const Text(
-                'Cerrar sesión',
-                style: TextStyle(color: AppTheme.errorColor),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }
